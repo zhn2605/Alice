@@ -16,9 +16,10 @@ export function getDb(): Database.Database {
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      discord_webhook_url TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
