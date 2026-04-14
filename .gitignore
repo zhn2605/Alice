@@ -41,7 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 # debug
-check-live.ts
+/scripts
 /data
 .env.local
 /test-results
