@@ -28,16 +28,16 @@ const SAMPLE = {
 const SAMPLE_JSON = JSON.stringify(SAMPLE);
 
 describe('parseVictoriasSecret', () => {
-    it('returns per-size map and anyAvailable true when sizes available', () => {
+    it('returns per-size map and overall_stock in when sizes available', () => {
         const snap = parseVictoriasSecret(SAMPLE_JSON, '5TKS');
-        expect(snap.anyAvailable).toBe(true);
-        expect(snap.sizes).toEqual({ S: true, M: true, L: false });
+        expect(snap.overall_stock).toBe('in');
+        expect(snap.specific_stock).toEqual({ S: 'in', M: 'in', L: 'out' });
     });
 
-    it('returns empty map + anyAvailable false when variant isSoldOut AND no sizes', () => {
+    it('returns empty map + overall_stock out when variant isSoldOut AND no sizes', () => {
         const snap = parseVictoriasSecret(SAMPLE_JSON, '7MXW');
-        expect(snap.anyAvailable).toBe(false);
-        expect(snap.sizes).toEqual({});
+        expect(snap.overall_stock).toBe('out');
+        expect(snap.specific_stock).toEqual({});
     });
 
     it('trusts availableSizes over isSoldOut flag (limited-quantity case)', () => {
@@ -55,19 +55,19 @@ describe('parseVictoriasSecret', () => {
             },
         };
         const snap = parseVictoriasSecret(JSON.stringify(limited), 'LIMITED');
-        expect(snap.anyAvailable).toBe(true);
-        expect(snap.sizes).toEqual({ '32DDD (F)': true, '40C': true });
+        expect(snap.overall_stock).toBe('in');
+        expect(snap.specific_stock).toEqual({ '32DDD (F)': 'in', '40C': 'in' });
     });
 
     it('returns empty map when availableSizes empty even without isSoldOut', () => {
         const snap = parseVictoriasSecret(SAMPLE_JSON, '9ZZZ');
-        expect(snap.anyAvailable).toBe(false);
+        expect(snap.overall_stock).toBe('out');
     });
 
     it('returns empty snapshot when choice not present', () => {
         const snap = parseVictoriasSecret(SAMPLE_JSON, 'NOPE');
-        expect(snap.anyAvailable).toBe(false);
-        expect(snap.sizes).toEqual({});
+        expect(snap.overall_stock).toBe('out');
+        expect(snap.specific_stock).toEqual({});
     });
 });
 
@@ -123,8 +123,8 @@ describe('parseVictoriasSecret with bra sizes', () => {
             },
         };
         const snap = parseVictoriasSecret(JSON.stringify(bra), 'BRA1');
-        expect(snap.sizes).toEqual({ '30A': true, '30B': false, '34DD': true });
-        expect(snap.anyAvailable).toBe(true);
+        expect(snap.specific_stock).toEqual({ '30A': 'in', '30B': 'out', '34DD': 'in' });
+        expect(snap.overall_stock).toBe('in');
     });
 });
 

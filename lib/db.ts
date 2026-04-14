@@ -39,6 +39,7 @@ export function getDb(): Database.Database {
       label TEXT,
       size TEXT,
       last_status TEXT,
+      last_sizes TEXT,
       last_checked_at INTEGER,
       last_notified_at INTEGER,
       created_at INTEGER NOT NULL
@@ -46,6 +47,11 @@ export function getDb(): Database.Database {
 
     CREATE INDEX IF NOT EXISTS idx_trackers_user_id ON trackers(user_id);
     `);
+
+  const cols = db.prepare(`PRAGMA table_info(trackers)`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === 'last_sizes')) {
+    db.exec(`ALTER TABLE trackers ADD COLUMN last_sizes TEXT`);
+  }
 
   _db = db;
   return db;

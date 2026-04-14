@@ -1,8 +1,8 @@
 export type StockStatus = 'in' | 'out';
 
 export interface StockSnapshot {
-    sizes: Record<string, boolean>;
-    anyAvailable: boolean;
+    overall_stock: StockStatus;
+    specific_stock: Record<string, StockStatus>;
 }
 
 export interface StockAdapter {
@@ -19,6 +19,7 @@ export interface TrackerRow {
     label: string | null;
     size: string | null;
     last_status: StockStatus | null;
+    last_sizes: string | null;
     last_checked_at: number | null;
     last_notified_at: number | null;
     created_at: number;

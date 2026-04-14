@@ -48,18 +48,18 @@ export function parseVictoriasSecret(clientPropsJson: string, choice: string): S
     const data = JSON.parse(clientPropsJson);
     const variant = findVariant(data, choice);
     if (!variant) {
-        return { sizes: {}, anyAvailable: false };
+        return { overall_stock: 'out', specific_stock: {} };
     }
     const rawSizes = variant.availableSizes ?? {};
-    const sizes: Record<string, boolean> = {};
+    const specific_stock: Record<string, 'in' | 'out'> = {};
     for (const [label, entry] of Object.entries(rawSizes)) {
-        sizes[label] = entry?.isAvailable === true;
+        specific_stock[label] = entry?.isAvailable === true ? 'in' : 'out';
     }
-    const anyAvailable = Object.values(sizes).some((v) => v);
+    const anyAvailable = Object.values(specific_stock).some((s) => s === 'in');
     if (!anyAvailable && variant.isSoldOut === true) {
-        return { sizes: {}, anyAvailable: false };
+        return { overall_stock: 'out', specific_stock: {} };
     }
-    return { sizes, anyAvailable };
+    return { overall_stock: anyAvailable ? 'in' : 'out', specific_stock };
 }
 
 export function normalizeVsUrl(raw: string): string {

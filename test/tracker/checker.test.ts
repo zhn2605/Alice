@@ -37,16 +37,16 @@ describe('decideNotify', () => {
 
 describe('effectiveStatus', () => {
     const snap: StockSnapshot = {
-        sizes: { S: true, M: false, L: true },
-        anyAvailable: true,
+        overall_stock: 'in',
+        specific_stock: { S: 'in', M: 'out', L: 'in' },
     };
-    const empty: StockSnapshot = { sizes: {}, anyAvailable: false };
+    const empty: StockSnapshot = { overall_stock: 'out', specific_stock: {} };
 
-    it('returns "in" when size=null and anyAvailable', () => {
+    it('returns "in" when size=null and overall_stock in', () => {
         expect(effectiveStatus(snap, null)).toBe('in');
     });
 
-    it('returns "out" when size=null and not anyAvailable', () => {
+    it('returns "out" when size=null and overall_stock out', () => {
         expect(effectiveStatus(empty, null)).toBe('out');
     });
 
