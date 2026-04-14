@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { decideNotify, NOTIFY_COOLDOWN_MS } from '../../lib/tracker/checker';
+import { decideNotify, effectiveStatus, NOTIFY_COOLDOWN_MS } from '../../lib/tracker/checker';
+import type { StockSnapshot } from '../../lib/tracker/types';
 
 const base = {
     last_status: 'out' as const,
@@ -10,26 +11,54 @@ const base = {
 
 describe('decideNotify', () => {
     it('notifies when status changes from out to in', () => {
-        expect(decideNotify({...base, newStatus: 'in' })).toBe(true);
+        expect(decideNotify({ ...base, newStatus: 'in' })).toBe(true);
     });
 
     it('does NOT notify on first check (last_status = null)', () => {
-        expect(decideNotify({...base, last_status: null, newStatus: 'in' })).toBe(false);
+        expect(decideNotify({ ...base, last_status: null, newStatus: 'in' })).toBe(false);
     });
 
     it('does NOT notify when status stays the same', () => {
-        expect(decideNotify({...base, last_status: 'in', newStatus: 'in' })).toBe(false);
+        expect(decideNotify({ ...base, last_status: 'in', newStatus: 'in' })).toBe(false);
     });
 
-    it('does NOT notify when wehook is not set', () => {
-        expect(decideNotify({...base, webhookUrl: null, newStatus: 'in' })).toBe(false);
+    it('does NOT notify when webhook is not set', () => {
+        expect(decideNotify({ ...base, webhookUrl: null, newStatus: 'in' })).toBe(false);
     });
 
-    it('does NOT nofity within cooldown window', () => {
-        expect(decideNotify({...base, last_notified_at: base.now - (NOTIFY_COOLDOWN_MS - 1), newStatus: 'in' })).toBe(false);
+    it('does NOT notify within cooldown window', () => {
+        expect(decideNotify({ ...base, last_notified_at: base.now - (NOTIFY_COOLDOWN_MS - 1), newStatus: 'in' })).toBe(false);
     });
 
     it('notifies after cooldown window', () => {
-        expect(decideNotify({...base, last_notified_at: base.now - (NOTIFY_COOLDOWN_MS + 1), newStatus: 'in' })).toBe(true);
+        expect(decideNotify({ ...base, last_notified_at: base.now - (NOTIFY_COOLDOWN_MS + 1), newStatus: 'in' })).toBe(true);
+    });
+});
+
+describe('effectiveStatus', () => {
+    const snap: StockSnapshot = {
+        sizes: { S: true, M: false, L: true },
+        anyAvailable: true,
+    };
+    const empty: StockSnapshot = { sizes: {}, anyAvailable: false };
+
+    it('returns "in" when size=null and anyAvailable', () => {
+        expect(effectiveStatus(snap, null)).toBe('in');
+    });
+
+    it('returns "out" when size=null and not anyAvailable', () => {
+        expect(effectiveStatus(empty, null)).toBe('out');
+    });
+
+    it('returns "in" when target size is available', () => {
+        expect(effectiveStatus(snap, 'S')).toBe('in');
+    });
+
+    it('returns "out" when target size is not available', () => {
+        expect(effectiveStatus(snap, 'M')).toBe('out');
+    });
+
+    it('returns "out" when target size is missing from map', () => {
+        expect(effectiveStatus(snap, 'XXL')).toBe('out');
     });
 });

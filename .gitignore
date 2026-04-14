@@ -40,6 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# debug
+check-live.ts
 /data
 .env.local
 /test-results

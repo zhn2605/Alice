@@ -1,6 +1,13 @@
-import type { StockStatus } from './types';
+import type { StockSnapshot, StockStatus } from './types';
 
 export const NOTIFY_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+
+export function effectiveStatus(snapshot: StockSnapshot, size: string | null): StockStatus {
+    if (size === null) {
+        return snapshot.anyAvailable ? 'in' : 'out';
+    }
+    return snapshot.sizes[size] === true ? 'in' : 'out';
+}
 
 export interface DecideNotifyArgs {
     newStatus: StockStatus;

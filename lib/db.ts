@@ -37,6 +37,7 @@ export function getDb(): Database.Database {
       url TEXT NOT NULL,
       adapter_id TEXT NOT NULL,
       label TEXT,
+      size TEXT,
       last_status TEXT,
       last_checked_at INTEGER,
       last_notified_at INTEGER,
