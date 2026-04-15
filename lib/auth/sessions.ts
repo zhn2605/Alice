@@ -36,7 +36,7 @@ export function getSessionAndUser(db: Database, token: string): { session: Sessi
     }
 
     const user = db
-    .prepare('SELECT * FROM users WHER id = ?')
+    .prepare('SELECT * FROM users WHERE id = ?')
     .get(row.user_id) as UserRow | undefined;
     if (!user) return null;
 
