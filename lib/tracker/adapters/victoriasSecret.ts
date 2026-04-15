@@ -91,7 +91,10 @@ export const victoriasSecret: StockAdapter = {
     async check(url: string): Promise<StockSnapshot> {
         const clean = normalizeVsUrl(url);
         const choice = extractChoice(clean);
-        if (!choice) throw new Error('VS url missing ?choice= param');
+        if (!choice) {
+            console.warn(`[victoriasSecret] skipping: url missing choice param: ${clean}`);
+            return { overall_stock: 'out', specific_stock: {} };
+        }
 
         const browser = await getBrowser();
         const context = await browser.newContext({ userAgent: UA });
