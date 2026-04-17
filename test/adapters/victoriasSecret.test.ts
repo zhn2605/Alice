@@ -34,10 +34,10 @@ describe('parseVictoriasSecret', () => {
         expect(snap.specific_stock).toEqual({ S: 'in', M: 'in', L: 'out' });
     });
 
-    it('returns empty map + overall_stock out when variant isSoldOut AND no sizes', () => {
+    it('returns sibling sizes as out when variant isSoldOut AND no own sizes', () => {
         const snap = parseVictoriasSecret(SAMPLE_JSON, '7MXW');
         expect(snap.overall_stock).toBe('out');
-        expect(snap.specific_stock).toEqual({});
+        expect(snap.specific_stock).toEqual({ S: 'out', M: 'out', L: 'out' });
     });
 
     it('trusts availableSizes over isSoldOut flag (limited-quantity case)', () => {
@@ -102,7 +102,99 @@ describe('findVariant', () => {
             },
         };
         const v = findVariant(bra, 'TARGET');
-        expect(v?.availableSizes?.['30A']).toMatchObject({ isAvailable: true });
+        const sizes = v?.availableSizes as Record<string, { isAvailable?: boolean }> | undefined;
+        expect(sizes?.['30A']).toMatchObject({ isAvailable: true });
+    });
+});
+
+describe('parseVictoriasSecret product extraction', () => {
+    it('builds title from product label + choice label and resolves image path', () => {
+        const json = JSON.stringify({
+            productData: {
+                '11270925': {
+                    label: 'Logo Strappy Plunge Bra',
+                    choices: {
+                        '7CLB': {
+                            label: 'Heather Burgundy',
+                            images: [
+                                { type: 'onModelFront', image: 'png/zz/25/07/30/01/112709257CLB_OM_F' },
+                                { type: 'offModelFront', image: 'png/zz/25/08/01/03/112709257CLB_OF_F' },
+                            ],
+                            isSoldOut: false,
+                            availableSizes: {
+                                '32DDD': { isAvailable: true },
+                                '34DD':  { isAvailable: false },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        const snap = parseVictoriasSecret(json, '7CLB');
+        expect(snap.product?.title).toBe('Logo Strappy Plunge Bra — Heather Burgundy');
+        expect(snap.product?.image_url).toContain('112709257CLB_OF_F.jpg');
+        expect(snap.overall_stock).toBe('in');
+        expect(snap.specific_stock).toEqual({ '32DDD': 'in', '34DD': 'out' });
+    });
+
+    it('parses real-world string-array shape with availableSizes + unavailableSizes', () => {
+        const json = JSON.stringify({
+            productData: {
+                '11270925': {
+                    label: 'Cotton Lace Trim',
+                    choices: {
+                        '7J0X': {
+                            label: 'Noir Navy',
+                            images: [{ type: 'offModelFront', image: 'png/zz/x/7J0X_OF_F' }],
+                            availableSizes: ['32A', '32B', '34A'],
+                            unavailableSizes: ['30A', '30B'],
+                        },
+                    },
+                },
+            },
+        });
+        const snap = parseVictoriasSecret(json, '7J0X');
+        expect(snap.overall_stock).toBe('in');
+        expect(snap.specific_stock).toEqual({
+            '32A': 'in',
+            '32B': 'in',
+            '34A': 'in',
+            '30A': 'out',
+            '30B': 'out',
+        });
+    });
+});
+
+describe('parseVictoriasSecret size union across thin + rich nodes', () => {
+    it('lists OOS sizes that only exist in the thin config node', () => {
+        const data = {
+            config: {
+                BRA1: {
+                    // thin: complete size list, no isAvailable
+                    availableSizes: {
+                        '30A': { variantId: 'v1' },
+                        '30B': { variantId: 'v2' },
+                        '34DD': { variantId: 'v3' },
+                    },
+                },
+            },
+            stock: {
+                BRA1: {
+                    // rich: only the currently-purchasable sizes
+                    isSoldOut: false,
+                    availableSizes: {
+                        '34DD': { isAvailable: true },
+                    },
+                },
+            },
+        };
+        const snap = parseVictoriasSecret(JSON.stringify(data), 'BRA1');
+        expect(snap.specific_stock).toEqual({
+            '30A': 'out',
+            '30B': 'out',
+            '34DD': 'in',
+        });
+        expect(snap.overall_stock).toBe('in');
     });
 });
 

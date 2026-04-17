@@ -3,6 +3,10 @@ export type StockStatus = 'in' | 'out';
 export interface StockSnapshot {
     overall_stock: StockStatus;
     specific_stock: Record<string, StockStatus>;
+    product?: {
+        title: string;
+        image_url: string | null;
+    };
 }
 
 export interface StockAdapter {
@@ -17,7 +21,8 @@ export interface TrackerRow {
     url: string;
     adapter_id: string;
     label: string | null;
-    size: string | null;
+    image_url: string | null;
+    sizes: string;
     last_status: StockStatus | null;
     last_sizes: string | null;
     last_checked_at: number | null;

@@ -1,9 +1,7 @@
-import Image from "next/image";
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth/middleware';
 
-export default function Home() {
-  return (
-    <main>
-      <h1 className="text-4xl font-bold text-center mt-10">Alice</h1>
-    </main>
-  );
+export default async function Home() {
+    const s = await getSession();
+    redirect(s ? '/dashboard' : '/login');
 }

@@ -49,16 +49,17 @@ async function main(): Promise<void> {
     // run first tick immediately, then loop
     while (true) {
         try {
-        await tick();
+            await tick();
         } catch (err) {
             console.error('[worker] tick threw:', err);
         }
-            const jitter = (Math.random() * 2 - 1) * JITTER_MS;
-            await sleep(INTERVAL_MS + jitter);
-        }
+        
+        const jitter = (Math.random() * 2 - 1) * JITTER_MS;
+        await sleep(INTERVAL_MS + jitter);
     }
+}
 
-    main().catch((err) => {
+main().catch((err) => {
     console.error('[worker] fatal:', err);
     closeBrowser().finally(() => process.exit(1));
 });
