@@ -12,6 +12,9 @@ describe('parseSizes', () => {
     it('parses JSON array', () => {
         expect(parseSizes('["32DDD","34DD"]')).toEqual(['32DDD', '34DD']);
     });
+    it('passes through array directly (JSONB)', () => {
+        expect(parseSizes(['32DDD', '34DD'])).toEqual(['32DDD', '34DD']);
+    });
     it('returns [] on garbage', () => {
         expect(parseSizes('not json')).toEqual([]);
         expect(parseSizes('{}')).toEqual([]);
@@ -21,6 +24,9 @@ describe('parseSizes', () => {
 describe('parseLastSizes', () => {
     it('parses object of status', () => {
         expect(parseLastSizes('{"S":"in","M":"out"}')).toEqual({ S: 'in', M: 'out' });
+    });
+    it('passes through object directly (JSONB)', () => {
+        expect(parseLastSizes({ S: 'in', M: 'out' })).toEqual({ S: 'in', M: 'out' });
     });
     it('returns {} on null or bad input', () => {
         expect(parseLastSizes(null)).toEqual({});

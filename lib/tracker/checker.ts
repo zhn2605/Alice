@@ -1,4 +1,4 @@
-import { Database } from 'better-sqlite3';
+import { SupabaseClient } from '@supabase/supabase-js';
 import type { StockSnapshot, StockStatus, TrackerRow } from './types';
 import { findAdapter } from './adapters';
 import { UserRow } from '../auth/sessions';
@@ -29,7 +29,7 @@ export function decideNotify(a: DecideNotifyArgs): boolean {
 }
 
 export async function runCheck(
-    db: Database,
+    supabase: SupabaseClient,
     tracker: TrackerRow,
     user: UserRow,
     now: number = Date.now(),
@@ -51,7 +51,6 @@ export async function runCheck(
     const tracked = parseSizes(tracker.sizes);
     const newStatus = effectiveStatusMulti(snapshot, tracked);
 
-    const currentSizesJson = JSON.stringify(snapshot.specific_stock);
     const previousSizes = parseLastSizes(tracker.last_sizes);
     const restockedSizes = newlyRestocked(tracked, previousSizes, snapshot.specific_stock);
 
@@ -63,22 +62,21 @@ export async function runCheck(
         now,
     });
 
-    if (shouldNotify) {
-        db.prepare(
-            `UPDATE trackers SET last_status = ?, last_sizes = ?, last_checked_at = ?, last_notified_at = ? WHERE id = ?`,
-        ).run(newStatus, currentSizesJson, now, now, tracker.id);
-    } else {
-        db.prepare(
-            `UPDATE trackers SET last_status = ?, last_sizes = ?, last_checked_at = ? WHERE id = ?`,
-        ).run(newStatus, currentSizesJson, now, tracker.id);
-    }
+    const updates: Record<string, unknown> = {
+        last_status: newStatus,
+        last_sizes: snapshot.specific_stock,
+        last_checked_at: now,
+    };
+    if (shouldNotify) updates.last_notified_at = now;
+
+    await supabase.from('trackers').update(updates).eq('id', tracker.id);
 
     if (shouldNotify && user.discord_webhook_url) {
         try {
             await sendDiscord(user.discord_webhook_url, {
                 ...tracker,
                 last_status: newStatus,
-                last_sizes: currentSizesJson,
+                last_sizes: snapshot.specific_stock,
                 last_checked_at: now,
                 last_notified_at: now,
             }, restockedSizes);

@@ -1,54 +1,14 @@
-import Database from 'better-sqlite3';
-import path from 'node:path';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-let _db:Database.Database | null = null;
+let _client: SupabaseClient | null = null;
 
-export function getDb(): Database.Database {
-  if (_db) {
-    return _db;
-  }
-  const dbPath = process.env.DATABASE_PATH ?? path.join(process.cwd(), 'data', 'alice.db');
-  
-  const db = new Database(dbPath);
-  
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+export function getSupabase(): SupabaseClient {
+    if (_client) return _client;
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      discord_webhook_url TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
 
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      expires_at INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
-
-    CREATE TABLE IF NOT EXISTS trackers (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      url TEXT NOT NULL,
-      adapter_id TEXT NOT NULL,
-      label TEXT,
-      image_url TEXT,
-      sizes TEXT NOT NULL DEFAULT '[]',
-      last_status TEXT,
-      last_sizes TEXT,
-      last_checked_at INTEGER,
-      last_notified_at INTEGER,
-      created_at INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_trackers_user_id ON trackers(user_id);
-    `);
-
-  _db = db;
-  return db;
+    _client = createClient(url, key);
+    return _client;
 }

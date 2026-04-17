@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth/middleware";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/db";
 import { findAdapter } from "@/lib/tracker/adapters";
 import { TrackerRow } from "@/lib/tracker/types";
 import { extractChoice, normalizeVsUrl } from "@/lib/tracker/adapters/victoriasSecret";
@@ -8,11 +8,14 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
     const s = await getSession();
-    if (!s) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });;
+    if (!s) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-    const trackers = getDb().prepare('SELECT * FROM trackers WHERE user_id = ?')
-    .all(s.user.id) as TrackerRow[];
-    return NextResponse.json({ trackers });
+    const { data: trackers } = await getSupabase()
+        .from('trackers')
+        .select('*')
+        .eq('user_id', s.user.id);
+
+    return NextResponse.json({ trackers: (trackers ?? []) as TrackerRow[] });
 }
 
 export async function POST(req: Request) {
@@ -43,25 +46,21 @@ export async function POST(req: Request) {
         );
     }
 
-    const db = getDb();
-    const existing = db
-        .prepare('SELECT id, sizes FROM trackers WHERE user_id = ? AND url = ?')
-        .get(s.user.id, cleanUrl) as { id: string; sizes: string } | undefined;
+    const supabase = getSupabase();
+    const { data: existing } = await supabase
+        .from('trackers')
+        .select('id, sizes')
+        .eq('user_id', s.user.id)
+        .eq('url', cleanUrl)
+        .single<{ id: string; sizes: string[] }>();
 
     if (existing) {
-        const current: string[] = (() => {
-            try {
-                const v = JSON.parse(existing.sizes);
-                return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
-            } catch {
-                return [];
-            }
-        })();
+        const current = Array.isArray(existing.sizes) ? existing.sizes : [];
         const merged = [...new Set([...current, ...sizes])];
-        db.prepare('UPDATE trackers SET sizes = ? WHERE id = ?').run(
-            JSON.stringify(merged),
-            existing.id,
-        );
+        await supabase
+            .from('trackers')
+            .update({ sizes: merged })
+            .eq('id', existing.id);
         return NextResponse.json({ ok: true, id: existing.id, merged: true });
     }
 
@@ -70,19 +69,18 @@ export async function POST(req: Request) {
         typeof body.image_url === 'string' && body.image_url.startsWith('http')
             ? body.image_url
             : null;
-    db.prepare(
-        `INSERT INTO trackers (id, user_id, url, adapter_id, label, image_url, sizes, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
+
+    const { error } = await supabase.from('trackers').insert({
         id,
-        s.user.id,
-        cleanUrl,
-        adapter.id,
-        body.label ?? null,
+        user_id: s.user.id,
+        url: cleanUrl,
+        adapter_id: adapter.id,
+        label: body.label ?? null,
         image_url,
-        JSON.stringify(sizes),
-        Date.now(),
-    );
+        sizes,
+        created_at: Date.now(),
+    });
+    if (error) throw error;
 
     return NextResponse.json({ ok: true, id, merged: false });
 }

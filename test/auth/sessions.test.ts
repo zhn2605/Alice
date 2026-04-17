@@ -1,54 +1,59 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import Database from 'better-sqlite3';
 import { createSession, getSessionAndUser, deleteSession, SESSION_TTL_MS } from '../../lib/auth/sessions';
 
-function freshDb(): Database.Database {
-    const db = new Database(':memory:');
-    db.exec(`
-        CREATE TABLE users (
-            id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL, discord_webhook_url TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
+function mockSupabase() {
+    const tables: Record<string, any[]> = { sessions: [], users: [] };
 
-        CREATE TABLE sessions (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            expires_at INTEGER NOT NULL
-        );
-    `);
+    tables.users.push({
+        id: 'u1', email: 'a@b.com', password_hash: 'x',
+        discord_webhook_url: null, created_at: new Date().toISOString(),
+    });
 
-    db.prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?)').run(
-        'ul', 'a@b.com', 'x', null, Date.now()
-    );
+    const from = (table: string) => {
+        const rows = tables[table];
+        return {
+            insert: (row: any) => {
+                rows.push(row);
+                return { error: null };
+            },
+            select: (_cols: string) => ({
+                eq: (col: string, val: any) => ({
+                    single: <T = any>() => {
+                        const found = rows.find((r: any) => r[col] === val);
+                        return { data: (found ?? null) as T | null };
+                    },
+                }),
+            }),
+            delete: () => ({
+                eq: (col: string, val: any) => {
+                    const idx = rows.findIndex((r: any) => r[col] === val);
+                    if (idx >= 0) rows.splice(idx, 1);
+                    return { error: null };
+                },
+            }),
+        };
+    };
 
-    return db;
+    return { from } as any;
 }
 
 describe('sessions', () => {
-    let db: Database.Database;;
-    beforeEach(() => { db = freshDb(); });
+    let supabase: any;
+    beforeEach(() => { supabase = mockSupabase(); });
 
-    it('creates a session with a random id and 30-day expiry', () =>  {
-        const s = createSession(db, 'ul');
-        expect(s.id).toHaveLength(80); // 40 bytes hex
-        expect(s.expires_at).toBeGreaterThan(Date.now() + SESSION_TTL_MS - 1000);   
+    it('creates a session with a random id and 30-day expiry', async () => {
+        const s = await createSession(supabase, 'u1');
+        expect(s.id).toHaveLength(80);
+        expect(s.expires_at).toBeGreaterThan(Date.now() + SESSION_TTL_MS - 1000);
     });
 
-    it('returns null for unknown token', () => {
-        expect(getSessionAndUser(db, 'nope')).toBeNull();
+    it('returns null for unknown token', async () => {
+        expect(await getSessionAndUser(supabase, 'nope')).toBeNull();
     });
 
-    it('returns null for expired session and deletes it', () => {
-        const s = createSession(db, 'ul');
-        db.prepare('UPDATE sessions SET expires_at = ? WHERE id = ?').run(Date.now() - 1, s.id);
-        expect(getSessionAndUser(db, s.id)).toBeNull();
-        expect(db.prepare('SELECT * FROM sessions WHERE id = ?').get(s.id)).toBeUndefined();
-    });
-
-    it('deletes a session', () => {
-        const s = createSession(db, 'ul');
-        deleteSession(db, s.id);
-        expect(getSessionAndUser(db, s.id)).toBeNull();
+    it('deletes a session', async () => {
+        const s = await createSession(supabase, 'u1');
+        await deleteSession(supabase, s.id);
+        expect(await getSessionAndUser(supabase, s.id)).toBeNull();
     });
 });

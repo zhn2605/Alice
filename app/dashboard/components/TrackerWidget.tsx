@@ -9,7 +9,8 @@ interface Props {
     onDelete: () => void;
 }
 
-function parseJsonArray(s: string): string[] {
+function parseJsonArray(s: string | string[]): string[] {
+    if (Array.isArray(s)) return s.filter((x): x is string => typeof x === 'string');
     try {
         const v = JSON.parse(s);
         return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
@@ -18,8 +19,15 @@ function parseJsonArray(s: string): string[] {
     }
 }
 
-function parseStatusMap(s: string | null): Record<string, StockStatus> {
+function parseStatusMap(s: string | Record<string, StockStatus> | null): Record<string, StockStatus> {
     if (!s) return {};
+    if (typeof s === 'object') {
+        const out: Record<string, StockStatus> = {};
+        for (const [k, val] of Object.entries(s)) {
+            if (val === 'in' || val === 'out') out[k] = val;
+        }
+        return out;
+    }
     try {
         const v = JSON.parse(s);
         if (!v || typeof v !== 'object' || Array.isArray(v)) return {};

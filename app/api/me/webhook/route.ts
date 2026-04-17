@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth/middleware";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -15,8 +15,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'invalid  discord webhookUrl' }, { status: 400 });
     }
 
-    getDb().prepare('UPDATE users SET discord_webhook_url = ? WHERE id = ?')
-    .run(webhookUrl ?? null, s.user.id);
+    await getSupabase()
+        .from('users')
+        .update({ discord_webhook_url: webhookUrl ?? null })
+        .eq('id', s.user.id);
 
     return NextResponse.json({ ok: true });
 }

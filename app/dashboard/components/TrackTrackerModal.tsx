@@ -28,6 +28,9 @@ export default function TrackTrackerModal({
     const [preview, setPreview] = useState<PreviewResult | null>(null);
     const [selected, setSelected] = useState<Set<string>>(() => {
         if (!existing) return new Set();
+        if (Array.isArray(existing.sizes)) {
+            return new Set(existing.sizes.filter((s): s is string => typeof s === 'string'));
+        }
         try {
             const v = JSON.parse(existing.sizes);
             return new Set(Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : []);

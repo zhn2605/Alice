@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
-    "better-sqlite3": "^12.9.0",
+    "@supabase/supabase-js": "^2.103.3",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",
     "next": "16.2.3",
@@ -23,7 +23,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

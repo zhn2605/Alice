@@ -1,11 +1,11 @@
-import { getDb } from '../db';
+import { getSupabase } from '../db';
 import { getSessionAndUser, type UserRow, type SessionRow } from './sessions';
 import { readSessionCookie } from './cookies';
 
 export async function getSession(): Promise<{ user: UserRow; session: SessionRow } | null> {
     const token = await readSessionCookie();
     if (!token) return null;
-    return getSessionAndUser(getDb(), token);
+    return getSessionAndUser(getSupabase(), token);
 }
 
 export async function requireUser(): Promise<UserRow> {

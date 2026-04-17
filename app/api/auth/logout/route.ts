@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getSupabase } from '@/lib/db';
 import { deleteSession } from '@/lib/auth/sessions';
 import { clearSessionCookie, readSessionCookie } from '@/lib/auth/cookies';
 
-export async function POST(req: Request) {
+export async function POST() {
     const token = await readSessionCookie();
     if (token) {
-        deleteSession(getDb(), token);
+        await deleteSession(getSupabase(), token);
         await clearSessionCookie();
     }
 

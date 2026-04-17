@@ -22,9 +22,9 @@ export interface TrackerRow {
     adapter_id: string;
     label: string | null;
     image_url: string | null;
-    sizes: string;
+    sizes: string[];
     last_status: StockStatus | null;
-    last_sizes: string | null;
+    last_sizes: Record<string, StockStatus> | null;
     last_checked_at: number | null;
     last_notified_at: number | null;
     created_at: number;

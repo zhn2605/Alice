@@ -1,15 +1,20 @@
 import { getSession } from "@/lib/auth/middleware";
-import { getDb } from "@/lib/db";
+import { getSupabase } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     const s = await getSession();
-    if (!s) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });;
+    if (!s) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
     const { id } = await params;
-    const result = getDb().prepare('DELETE FROM trackers WHERE id = ? AND user_id = ?').run(id, s.user.id);
+    const { data } = await getSupabase()
+        .from('trackers')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', s.user.id)
+        .select('id');
 
-    if (result.changes === 0) {
+    if (!data?.length) {
         return NextResponse.json({ error: 'tracker not found' }, { status: 404 });
     }
 
@@ -26,29 +31,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         sizes?: string[];
     };
 
-    const db = getDb();
-    const existing = db
-        .prepare('SELECT id FROM trackers WHERE id = ? AND user_id = ?')
-        .get(id, s.user.id);
+    const supabase = getSupabase();
+    const { data: existing } = await supabase
+        .from('trackers')
+        .select('id')
+        .eq('id', id)
+        .eq('user_id', s.user.id)
+        .single();
     if (!existing) {
         return NextResponse.json({ error: 'tracker not found' }, { status: 404 });
     }
 
-    const sets: string[] = [];
-    const args: unknown[] = [];
-    if ('label' in body) {
-        sets.push('label = ?');
-        args.push(body.label ?? null);
-    }
+    const updates: Record<string, unknown> = {};
+    if ('label' in body) updates.label = body.label ?? null;
     if (Array.isArray(body.sizes)) {
-        const sizes = body.sizes.filter((s): s is string => typeof s === 'string');
-        sets.push('sizes = ?');
-        args.push(JSON.stringify(sizes));
+        updates.sizes = body.sizes.filter((s): s is string => typeof s === 'string');
     }
-    if (sets.length === 0) {
+    if (Object.keys(updates).length === 0) {
         return NextResponse.json({ ok: true });
     }
-    args.push(id);
-    db.prepare(`UPDATE trackers SET ${sets.join(', ')} WHERE id = ?`).run(...args);
+
+    await supabase.from('trackers').update(updates).eq('id', id);
     return NextResponse.json({ ok: true });
 }

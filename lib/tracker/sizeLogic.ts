@@ -1,18 +1,26 @@
 import type { StockSnapshot, StockStatus } from './types';
 
-export function parseSizes(sizesJson: string): string[] {
+export function parseSizes(sizes: string | string[]): string[] {
+    if (Array.isArray(sizes)) return sizes.filter((s): s is string => typeof s === 'string');
     try {
-        const v = JSON.parse(sizesJson);
+        const v = JSON.parse(sizes);
         return Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : [];
     } catch {
         return [];
     }
 }
 
-export function parseLastSizes(lastSizesJson: string | null): Record<string, StockStatus> {
-    if (!lastSizesJson) return {};
+export function parseLastSizes(lastSizes: string | Record<string, StockStatus> | null): Record<string, StockStatus> {
+    if (!lastSizes) return {};
+    if (typeof lastSizes === 'object') {
+        const out: Record<string, StockStatus> = {};
+        for (const [k, s] of Object.entries(lastSizes)) {
+            if (s === 'in' || s === 'out') out[k] = s;
+        }
+        return out;
+    }
     try {
-        const v = JSON.parse(lastSizesJson);
+        const v = JSON.parse(lastSizes);
         if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
         const out: Record<string, StockStatus> = {};
         for (const [k, s] of Object.entries(v)) {

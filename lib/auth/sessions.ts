@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { randomBytes } from 'node:crypto';
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -14,35 +14,45 @@ export interface UserRow {
     email: string;
     password_hash: string;
     discord_webhook_url: string | null;
-    created_at: number;
+    created_at: string;
 }
 
-export function createSession(db: Database, userId: string): SessionRow {
+export async function createSession(supabase: SupabaseClient, userId: string): Promise<SessionRow> {
     const id = randomBytes(40).toString('hex');
     const expires_at = Date.now() + SESSION_TTL_MS;
-    db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)').run(id, userId, expires_at);
+
+    const { error } = await supabase.from('sessions').insert({ id, user_id: userId, expires_at });
+    if (error) throw error;
+
     return { id, user_id: userId, expires_at };
 }
 
-export function getSessionAndUser(db: Database, token: string): { session: SessionRow; user: UserRow } | null {
-    const row = db
-    .prepare('SELECT * FROM sessions WHERE id = ?')
-    .get(token) as SessionRow | undefined;
-    if (!row) return null;
+export async function getSessionAndUser(
+    supabase: SupabaseClient,
+    token: string,
+): Promise<{ session: SessionRow; user: UserRow } | null> {
+    const { data: session } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', token)
+        .single();
+    if (!session) return null;
 
-    if (row.expires_at <= Date.now()) {
-        db.prepare('DELETE FROM sessions WHERE id = ?').run(token);
+    if (session.expires_at <= Date.now()) {
+        await supabase.from('sessions').delete().eq('id', token);
         return null;
     }
 
-    const user = db
-    .prepare('SELECT * FROM users WHERE id = ?')
-    .get(row.user_id) as UserRow | undefined;
+    const { data: user } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user_id)
+        .single();
     if (!user) return null;
 
-    return { session: row, user};
+    return { session, user };
 }
 
-export function deleteSession(db: Database, token: string): void {
-    db.prepare('DELETE FROM sessions WHERE id = ?').run(token);
+export async function deleteSession(supabase: SupabaseClient, token: string): Promise<void> {
+    await supabase.from('sessions').delete().eq('id', token);
 }
