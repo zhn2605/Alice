@@ -2,7 +2,6 @@ CREATE TABLE users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  discord_webhook_url TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -13,9 +12,19 @@ CREATE TABLE sessions (
 );
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);
 
+CREATE TABLE closets (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  discord_webhook_url TEXT,
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX idx_closets_user_id ON closets(user_id);
+
 CREATE TABLE trackers (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  closet_id TEXT NOT NULL REFERENCES closets(id) ON DELETE CASCADE,
   url TEXT NOT NULL,
   adapter_id TEXT NOT NULL,
   label TEXT,
@@ -28,3 +37,4 @@ CREATE TABLE trackers (
   created_at BIGINT NOT NULL
 );
 CREATE INDEX idx_trackers_user_id ON trackers(user_id);
+CREATE INDEX idx_trackers_closet_id ON trackers(closet_id);
