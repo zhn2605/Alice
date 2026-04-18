@@ -1,7 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { StockSnapshot, StockStatus, TrackerRow } from './types';
 import { findAdapter } from './adapters';
-import { UserRow } from '../auth/sessions';
 import { sendDiscord } from './notifier';
 import {
     parseSizes,
@@ -31,7 +30,7 @@ export function decideNotify(a: DecideNotifyArgs): boolean {
 export async function runCheck(
     supabase: SupabaseClient,
     tracker: TrackerRow,
-    user: UserRow,
+    webhookUrl: string | null,
     now: number = Date.now(),
 ): Promise<void> {
     const adapter = findAdapter(tracker.url);
@@ -58,7 +57,7 @@ export async function runCheck(
         newStatus,
         last_status: tracker.last_status,
         last_notified_at: tracker.last_notified_at,
-        webhookUrl: user.discord_webhook_url,
+        webhookUrl,
         now,
     });
 
@@ -71,9 +70,9 @@ export async function runCheck(
 
     await supabase.from('trackers').update(updates).eq('id', tracker.id);
 
-    if (shouldNotify && user.discord_webhook_url) {
+    if (shouldNotify && webhookUrl) {
         try {
-            await sendDiscord(user.discord_webhook_url, {
+            await sendDiscord(webhookUrl, {
                 ...tracker,
                 last_status: newStatus,
                 last_sizes: snapshot.specific_stock,

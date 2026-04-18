@@ -32,7 +32,7 @@ export default function SignupPage() {
         <main className="flex-1 flex items-center justify-center p-6 bg-espresso">
             <div className="w-full max-w-sm space-y-6">
                 <header>
-                    <h1 className="text-3xl font-semibold tracking-tight">Sign up</h1>
+                    <h1 className="text-3xl font-semibold tracking-tight text-cream">Sign up</h1>
                     <p className="text-sm text-cream mt-1">Create an Alice account.</p>
                 </header>
                 <form onSubmit={submit} className="space-y-3">

@@ -13,7 +13,6 @@ export interface UserRow {
     id: string;
     email: string;
     password_hash: string;
-    discord_webhook_url: string | null;
     created_at: string;
 }
 

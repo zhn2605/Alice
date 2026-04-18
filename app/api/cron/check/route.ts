@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/db';
 import { runCheck } from '@/lib/tracker/checker';
 import { TrackerRow } from '@/lib/tracker/types';
-import { UserRow } from '@/lib/auth/sessions';
+import { ClosetRow } from '@/lib/closet/types';
 
 const INTER_CHECK_DELAY_MS = 2000;
 
@@ -20,21 +20,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const supabase = getSupabase();
     const { data: trackers } = await supabase.from('trackers').select('*');
+    const list = (trackers ?? []) as TrackerRow[];
 
     let checked = 0;
-    for (const tracker of (trackers ?? []) as TrackerRow[]) {
-        const { data: user } = await supabase
-            .from('users')
+    for (const tracker of list) {
+        const { data: closet } = await supabase
+            .from('closets')
             .select('*')
-            .eq('id', tracker.user_id)
-            .single<UserRow>();
+            .eq('id', tracker.closet_id)
+            .single<ClosetRow>();
 
-        if (!user) continue;
+        const webhookUrl = closet?.discord_webhook_url ?? null;
 
-        await runCheck(supabase, tracker, user);
+        await runCheck(supabase, tracker, webhookUrl);
         checked++;
 
-        if (checked < (trackers ?? []).length) {
+        if (checked < list.length) {
             await sleep(INTER_CHECK_DELAY_MS);
         }
     }

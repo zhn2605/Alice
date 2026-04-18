@@ -1,32 +1,33 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/middleware';
 import { getSupabase } from '@/lib/db';
-import type { TrackerRow } from '@/lib/tracker/types';
-import DashboardClient from './client';
+import LogoutButton from './LogoutButton';
 
 export default async function DashboardPage() {
     const s = await getSession();
     if (!s) redirect('/login');
 
-    const { data: trackers } = await getSupabase()
-        .from('trackers')
-        .select('*')
-        .eq('user_id', s.user.id)
-        .order('created_at', { ascending: false });
+    const { data: closets } = await getSupabase()
+        .from('closets')
+        .select('id')
+        .eq('user_id', s.user.id);
+
+    const count = closets?.length ?? 0;
 
     return (
-        <main className="flex-1 w-full max-w-3xl mx-auto p-6 space-y-8">
+        <main className="flex-1 bg-espresso text-cream p-8 space-y-6">
             <header className="flex items-baseline justify-between">
-                <div>
-                    <h1 className="text-3xl font-semibold tracking-tight">Alice</h1>
-                    <p className="text-sm text-neutral-500">Your restock trackers.</p>
-                </div>
-                <p className="text-xs text-neutral-500">{s.user.email}</p>
+                <h1 className="text-2xl font-semibold tracking-tight">Alice</h1>
+                <p className="text-xs">{s.user.email}</p>
             </header>
-            <DashboardClient
-                initialTrackers={(trackers ?? []) as TrackerRow[]}
-                currentWebhook={s.user.discord_webhook_url}
-            />
+            <section className="space-y-2">
+                <h2 className="text-sm font-medium">Closets ({count})</h2>
+                <p className="text-sm text-cream/70">
+                    Dashboard UI W.I.P. API endpoints are live under
+                    <code className="mx-1 rounded bg-cream/10 px-1">/api/closets</code>.
+                </p>
+            </section>
+            <LogoutButton />
         </main>
     );
 }

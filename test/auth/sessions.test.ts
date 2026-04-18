@@ -6,7 +6,7 @@ function mockSupabase() {
 
     tables.users.push({
         id: 'u1', email: 'a@b.com', password_hash: 'x',
-        discord_webhook_url: null, created_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
     });
 
     const from = (table: string) => {
