@@ -29,11 +29,11 @@ export default function SignupPage() {
     }
 
     return (
-        <main className="flex-1 flex items-center justify-center p-6">
+        <main className="flex-1 flex items-center justify-center p-6 bg-espresso">
             <div className="w-full max-w-sm space-y-6">
                 <header>
                     <h1 className="text-3xl font-semibold tracking-tight">Sign up</h1>
-                    <p className="text-sm text-neutral-500 mt-1">Create an Alice account.</p>
+                    <p className="text-sm text-cream mt-1">Create an Alice account.</p>
                 </header>
                 <form onSubmit={submit} className="space-y-3">
                     <input
@@ -42,7 +42,7 @@ export default function SignupPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="w-full rounded border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                        className="w-full rounded border border-rose px-[1vh] py-[.75vh] text-sm focus:outline-none focus:ring-1 focus:ring-rose"
                     />
                     <input
                         type="password"
@@ -51,20 +51,20 @@ export default function SignupPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         minLength={8}
-                        className="w-full rounded border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                        className="w-full rounded border border-rose px-[1vh] py-[.75vh] text-sm focus:outline-none focus:ring-1 focus:ring-rose"
                     />
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full rounded bg-neutral-900 text-white py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
+                        className="w-full rounded bg-moss text-cream py-2 text-sm font-medium hover:bg-coral disabled:opacity-50"
                     >
                         {loading ? 'Creating…' : 'Sign up'}
                     </button>
                 </form>
-                {err && <p className="text-sm text-red-600">{err}</p>}
-                <p className="text-sm text-neutral-500">
+                {err && <p className="text-sm text-coral">{err}</p>}
+                <p className="text-sm text-cream">
                     Already have an account?{' '}
-                    <a href="/login" className="underline hover:text-neutral-900">
+                    <a href="/login" className="underline hover:text-rose">
                         Log in
                     </a>
                 </p>
