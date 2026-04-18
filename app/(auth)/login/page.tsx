@@ -32,7 +32,7 @@ export default function LoginPage() {
         <main className="flex-1 flex items-center justify-center p-6 bg-espresso">
             <div className="w-full max-w-sm space-y-6">
                 <header>
-                    <h1 className="text-3xl font-semibold tracking-tight">Log in</h1>
+                    <h1 className="text-3xl font-semibold tracking-tight text-cream">Log in</h1>
                     <p className="text-sm text-cream mt-1">Welcome back to Alice.</p>
                 </header>
                 <form onSubmit={submit} className="space-y-3">

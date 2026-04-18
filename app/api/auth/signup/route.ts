@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const password_hash = await hashPassword(password);
 
     const { error } = await supabase.from('users').insert({
-        id, email, password_hash, discord_webhook_url: null,
+        id, email, password_hash,
     });
     if (error) throw error;
 

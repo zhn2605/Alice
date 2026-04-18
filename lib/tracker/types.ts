@@ -18,6 +18,7 @@ export interface StockAdapter {
 export interface TrackerRow {
     id: string;
     user_id: string;
+    closet_id: string;
     url: string;
     adapter_id: string;
     label: string | null;
