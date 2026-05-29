@@ -1,5 +1,5 @@
-import { StockAdapter, StockSnapshot } from '../types';
-import { getBrowser } from '../browser';
+import { StockSnapshot } from '../types';
+import { defineAdapter } from './defineAdapter';
 
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
@@ -225,67 +225,47 @@ export function extractChoice(url: string): string | null {
     return match ? decodeURIComponent(match[1]) : null;
 }
 
-export const victoriasSecret: StockAdapter = {
+export const victoriasSecret = defineAdapter<string>({
     id: 'victoriasSecret',
-    matches(url: string): boolean {
-        try {
-            const host = new URL(normalizeVsUrl(url)).hostname.toLowerCase();
-            return host === 'victoriassecret.com' || host.endsWith('.victoriassecret.com');
-        } catch {
-            return false;
-        }
+    hosts: ['victoriassecret.com'],
+    userAgent: UA,
+    normalizeUrl: normalizeVsUrl,
+    extractKey: extractChoice,
+    fetch: async (page): Promise<string> => {
+        const raw = await page.$eval('script#clientProps', (el: Element) => el.textContent);
+        if (!raw) throw new Error('clientProps script empty');
+        return raw;
     },
-    async check(url: string): Promise<StockSnapshot> {
-        const clean = normalizeVsUrl(url);
-        const choice = extractChoice(clean);
-        if (!choice) {
-            console.warn(`[victoriasSecret] skipping: url missing choice param: ${clean}`);
-            return { overall_stock: 'out', specific_stock: {} };
-        }
-
-        const browser = await getBrowser();
-        const context = await browser.newContext({ userAgent: UA });
-        const page = await context.newPage();
-        try {
-            await page.goto(clean, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-            const raw = await page.$eval('script#clientProps', (el) => el.textContent);
-            if (!raw) throw new Error('clientProps script empty');
-
-            if (process.env.VS_DEBUG) {
-                const data = JSON.parse(raw);
-                const allCandidates: VariantNode[] = [];
-                const walk = (o: unknown): void => {
-                    if (!o || typeof o !== 'object') return;
-                    const rec = o as Record<string, unknown>;
-                    if (choice in rec && isVariantNode(rec[choice])) {
-                        allCandidates.push(rec[choice] as VariantNode);
-                    }
-                    for (const v of Object.values(rec)) walk(v);
-                };
-                walk(data);
-                console.log('[VS_DEBUG] choice:', choice);
-                console.log('[VS_DEBUG] candidate count:', allCandidates.length);
-                allCandidates.forEach((c, i) => {
-                    const keys = Object.keys(c.availableSizes ?? {});
-                    const rich = keys.some((k) => {
-                        const e = (c.availableSizes as Record<string, unknown>)[k];
-                        return !!e && typeof e === 'object' && 'isAvailable' in (e as object);
-                    });
-                    console.log(`[VS_DEBUG] candidate[${i}] isSoldOut=${c.isSoldOut} rich=${rich} sizeKeys=${JSON.stringify(keys)}`);
-                });
-                const picked = findVariant(data, choice);
-                console.log('[VS_DEBUG] picked sizeKeys:', Object.keys(picked?.availableSizes ?? {}));
-                if (picked?.availableSizes) {
-                    for (const [k, v] of Object.entries(picked.availableSizes)) {
-                        console.log(`[VS_DEBUG]   ${k}: isAvailable=${(v as { isAvailable?: boolean })?.isAvailable}`);
-                    }
-                }
+    parse: parseVictoriasSecret,
+    debugEnv: 'VS_DEBUG',
+    debug: (raw: string, choice: string): void => {
+        const data = JSON.parse(raw);
+        const allCandidates: VariantNode[] = [];
+        const walk = (o: unknown): void => {
+            if (!o || typeof o !== 'object') return;
+            const rec = o as Record<string, unknown>;
+            if (choice in rec && isVariantNode(rec[choice])) {
+                allCandidates.push(rec[choice] as VariantNode);
             }
-
-            return parseVictoriasSecret(raw, choice);
-        } finally {
-            await page.close();
-            await context.close();
+            for (const v of Object.values(rec)) walk(v);
+        };
+        walk(data);
+        console.log('[VS_DEBUG] choice:', choice);
+        console.log('[VS_DEBUG] candidate count:', allCandidates.length);
+        allCandidates.forEach((c, i) => {
+            const keys = Object.keys(c.availableSizes ?? {});
+            const rich = keys.some((k) => {
+                const e = (c.availableSizes as Record<string, unknown>)[k];
+                return !!e && typeof e === 'object' && 'isAvailable' in (e as object);
+            });
+            console.log(`[VS_DEBUG] candidate[${i}] isSoldOut=${c.isSoldOut} rich=${rich} sizeKeys=${JSON.stringify(keys)}`);
+        });
+        const picked = findVariant(data, choice);
+        console.log('[VS_DEBUG] picked sizeKeys:', Object.keys(picked?.availableSizes ?? {}));
+        if (picked?.availableSizes) {
+            for (const [k, v] of Object.entries(picked.availableSizes)) {
+                console.log(`[VS_DEBUG]   ${k}: isAvailable=${(v as { isAvailable?: boolean })?.isAvailable}`);
+            }
         }
     },
-};
+});
