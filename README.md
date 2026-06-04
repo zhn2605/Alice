@@ -1,36 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Never miss a restock.
 
-## Getting Started
+Alice watches your favorite products and notifies you the moment a size is back in stock.
 
-First, run the development server:
+# Features
+Track any size
+Pick specific sizes or track the whole product. Alice checks each one independently.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Discord notifications
+Point Alice at a Discord webhook and get a rich embed the second something restocks.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Automatic re-checks
+Alice polls on a schedule so you don't have to keep refreshing product pages.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# How it works
+Paste a URL
+Drop any supported product link into your dashboard.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Pick sizes
+Choose which sizes to watch, or leave blank to track the whole product.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Get pinged
+Alice pings your Discord the moment a tracked size restocks.
